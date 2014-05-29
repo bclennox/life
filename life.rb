@@ -11,10 +11,9 @@ module Life
   def self.load(path)
     config = JSON.parse(File.read(path))
 
-    grid = Grid.new(config['width'], config['height'])
-    grid.seed(config['seeds'])
-
-    grid.run
+    Grid.new(config['width'], config['height']).tap do |grid|
+      grid.seed(config['seeds'])
+    end
   end
 
   class Grid
@@ -41,22 +40,18 @@ module Life
 
     def run
       loop do
-        system 'clear'
-        puts self
-        generate
-        sleep 0.5
+        presenter.present
+        step
       end
-    rescue Interrupt
-      puts
-    end
-
-    def to_s
-      cells.map(&:join).join("\n")
     end
 
   private
 
-    def generate
+    def presenter
+      @presenter ||= GridPresenter.new(self)
+    end
+
+    def step
       new_cells = generate_cells
 
       cells.each.with_index do |row, y|
@@ -73,6 +68,59 @@ module Life
         Array.new(width) do |x|
           DeadCell.new(self, x, y)
         end
+      end
+    end
+  end
+
+  class GridPresenter
+    attr_reader :grid
+
+    def initialize(grid)
+      @grid = grid
+    end
+
+    def present
+      system 'clear'
+      puts self
+      sleep 0.5
+    end
+
+    def to_s
+      [].tap do |s|
+        s << border
+        grid.cells.each do |row|
+          s << Row.new(row) << border
+        end
+      end.join("\n")
+    end
+
+  private
+
+    def border
+      @border ||= Border.new(grid.width)
+    end
+
+    class Border
+      attr_reader :width
+
+      def initialize(width)
+        @width = width
+      end
+
+      def to_s
+        '-' * (width * 4 + 1)
+      end
+    end
+
+    class Row
+      attr_reader :cells
+
+      def initialize(cells)
+        @cells = cells
+      end
+
+      def to_s
+        cells.map { |cell| "| #{cell} " }.join << '|'
       end
     end
   end
@@ -186,4 +234,9 @@ if ARGV.empty?
   exit 1
 end
 
-Life.load(ARGV.first)
+begin
+  grid = Life.load(ARGV.first)
+  grid.run
+rescue Interrupt
+  puts
+end
