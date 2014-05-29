@@ -5,7 +5,18 @@
 # - Any live cell with more than three live neighbours dies, as if by overcrowding.
 # - Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
+require 'json'
+
 module Life
+  def self.load(path)
+    config = JSON.parse(File.read(path))
+
+    grid = Grid.new(config['width'], config['height'])
+    grid.seed(config['seeds'])
+
+    grid.run
+  end
+
   class Grid
     attr_reader :width, :height, :cells
 
@@ -16,9 +27,9 @@ module Life
       @cells = generate_cells
     end
 
-    def seed(*coordinates)
-      coordinates.each do |coordinate|
-        cells[coordinate[1]][coordinate[0]] = LiveCell.new(self, coordinate[0], coordinate[1])
+    def seed(seeds)
+      seeds.each do |seed|
+        cells[seed['y']][seed['x']] = LiveCell.new(self, seed['x'], seed['y'])
       end
     end
 
@@ -138,20 +149,9 @@ end
 ### Main ###
 
 
-# Block
-# grid = Life::Grid.new(4, 4)
-# grid.seed([1, 1], [1, 2], [2, 1], [2, 2])
+if ARGV.empty?
+  puts "Usage: #{$0} /path/to/config.json"
+  exit 1
+end
 
-# Beehive
-# grid = Life::Grid.new(6, 5)
-# grid.seed([2, 1], [3, 1], [1, 2], [4, 2], [2, 3], [3, 3])
-
-# Blinker
-# grid = Life::Grid.new(5, 5)
-# grid.seed([2, 1], [2, 2], [2, 3])
-
-# Toad
-grid = Life::Grid.new(6, 6)
-grid.seed([2, 2], [3, 2], [4, 2], [1, 3], [2, 3], [3, 3])
-
-grid.run
+Life.load(ARGV.first)
