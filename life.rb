@@ -34,11 +34,9 @@ module Life
     end
 
     def get(x, y)
-      if x.between?(0, width - 1) && y.between?(0, height - 1)
-        cells[y][x]
-      else
-        DeadCell.new(self, x, y)
-      end
+      cells.fetch(y).fetch(x)
+    rescue IndexError
+      DeadCell.new(self, x, y)
     end
 
     def run
