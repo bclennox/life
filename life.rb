@@ -92,6 +92,10 @@ module Life
       "#{self.class}(#{x}, #{y})"
     end
 
+    def succ
+      self.class.const_get("CellWith#{live_neighbor_count}LiveNeighbors").new(self).succ
+    end
+
     def neighbors
       coordinates = [
         [x - 1, y - 1],
@@ -110,6 +114,18 @@ module Life
         grid.get(a, b)
       end
     end
+
+    def live_neighbor_count
+      neighbors.count(&:alive?)
+    end
+
+    class Successor
+      attr_reader :cell
+
+      def initialize(cell)
+        @cell = cell
+      end
+    end
   end
 
   class DeadCell < Cell
@@ -117,17 +133,24 @@ module Life
       ' '
     end
 
-    def succ
-      if neighbors.count(&:alive?) == 3
-        LiveCell.new(grid, x, y)
-      else
-        self
-      end
-    end
-
     def alive?
       false
     end
+
+    class LivingSuccessor < Successor
+      def succ
+        LiveCell.new(cell.grid, cell.x, cell.y)
+      end
+    end
+
+    class DyingSuccessor < Successor
+      def succ
+        cell
+      end
+    end
+
+    CellWith3LiveNeighbors = LivingSuccessor
+    CellWith0LiveNeighbors = CellWith1LiveNeighbors = CellWith2LiveNeighbors = CellWith4LiveNeighbors = CellWith5LiveNeighbors = CellWith6LiveNeighbors = CellWith7LiveNeighbors = CellWith8LiveNeighbors = DyingSuccessor
   end
 
   class LiveCell < Cell
@@ -135,17 +158,24 @@ module Life
       '*'
     end
 
-    def succ
-      if neighbors.count(&:alive?).between?(2, 3)
-        self
-      else
-        DeadCell.new(grid, x, y)
-      end
-    end
-
     def alive?
       true
     end
+
+    class LivingSuccessor < Successor
+      def succ
+        cell
+      end
+    end
+
+    class DyingSuccessor < Successor
+      def succ
+        DeadCell.new(cell.grid, cell.x, cell.y)
+      end
+    end
+
+    CellWith2LiveNeighbors = CellWith3LiveNeighbors = LivingSuccessor
+    CellWith0LiveNeighbors = CellWith1LiveNeighbors = CellWith4LiveNeighbors = CellWith5LiveNeighbors = CellWith6LiveNeighbors = CellWith7LiveNeighbors = CellWith8LiveNeighbors = DyingSuccessor
   end
 end
 
