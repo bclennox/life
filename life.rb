@@ -42,10 +42,14 @@ module Life
     end
 
     def run
-      5.times do
+      loop do
+        system 'clear'
         puts self
         generate
+        sleep 0.5
       end
+    rescue Interrupt
+      puts
     end
 
     def to_s
