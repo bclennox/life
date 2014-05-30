@@ -29,7 +29,7 @@ module Life
 
     def seed(seeds)
       seeds.each do |seed|
-        cells[seed['y']][seed['x']] = LiveCell.new(self, seed['x'], seed['y'])
+        cells[seed['y']][seed['x']] = Cell.new(self, seed['x'], seed['y'], true)
       end
     end
 
@@ -37,7 +37,7 @@ module Life
       if x.between?(0, width - 1) && y.between?(0, height - 1)
         cells[y][x]
       else
-        DeadCell.new(self, x, y)
+        Cell.new(self, x, y, false)
       end
     end
 
@@ -73,23 +73,44 @@ module Life
     def generate_cells
       Array.new(height) do |y|
         Array.new(width) do |x|
-          DeadCell.new(self, x, y)
+          Cell.new(self, x, y, false)
         end
       end
     end
   end
 
   class Cell
-    attr_reader :grid, :x, :y
+    attr_reader :grid, :x, :y, :alive
 
-    def initialize(grid, x, y)
+    def initialize(grid, x, y, alive)
       @grid = grid
       @x = x
       @y = y
+      @alive = !!alive
     end
 
-    def inspect
-      "#{self.class}(#{x}, #{y})"
+    def alive?
+      @alive
+    end
+
+    def to_s
+      alive? ? '*' : ' '
+    end
+
+    def succ
+      if alive?
+        if neighbors.count(&:alive?).between?(2, 3)
+          self
+        else
+          Cell.new(grid, x, y, false)
+        end
+      else
+        if neighbors.count(&:alive?) == 3
+          Cell.new(grid, x, y, true)
+        else
+          self
+        end
+      end
     end
 
     def neighbors
@@ -109,42 +130,6 @@ module Life
       coordinates.map do |a, b|
         grid.get(a, b)
       end
-    end
-  end
-
-  class DeadCell < Cell
-    def to_s
-      ' '
-    end
-
-    def succ
-      if neighbors.count(&:alive?) == 3
-        LiveCell.new(grid, x, y)
-      else
-        self
-      end
-    end
-
-    def alive?
-      false
-    end
-  end
-
-  class LiveCell < Cell
-    def to_s
-      '*'
-    end
-
-    def succ
-      if neighbors.count(&:alive?).between?(2, 3)
-        self
-      else
-        DeadCell.new(grid, x, y)
-      end
-    end
-
-    def alive?
-      true
     end
   end
 end
