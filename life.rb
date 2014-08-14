@@ -29,7 +29,7 @@ module Life
 
     def seed(seeds)
       seeds.each do |seed|
-        cells[seed['y']][seed['x']] = Cell.new(self, seed['x'], seed['y'], true)
+        cells[seed['y']][seed['x']] = AliveCell.new(self, seed['x'], seed['y'])
       end
     end
 
@@ -37,7 +37,7 @@ module Life
       if x.between?(0, width - 1) && y.between?(0, height - 1)
         cells[y][x]
       else
-        Cell.new(self, x, y, false)
+        DeadCell.new(self, x, y)
       end
     end
 
@@ -73,44 +73,19 @@ module Life
     def generate_cells
       Array.new(height) do |y|
         Array.new(width) do |x|
-          Cell.new(self, x, y, false)
+          DeadCell.new(self, x, y)
         end
       end
     end
   end
 
   class Cell
-    attr_reader :grid, :x, :y, :alive
+    attr_reader :grid, :x, :y
 
-    def initialize(grid, x, y, alive)
+    def initialize(grid, x, y)
       @grid = grid
       @x = x
       @y = y
-      @alive = !!alive
-    end
-
-    def alive?
-      @alive
-    end
-
-    def to_s
-      alive? ? '*' : ' '
-    end
-
-    def succ
-      if alive?
-        if neighbors.count(&:alive?).between?(2, 3)
-          self
-        else
-          Cell.new(grid, x, y, false)
-        end
-      else
-        if neighbors.count(&:alive?) == 3
-          Cell.new(grid, x, y, true)
-        else
-          self
-        end
-      end
     end
 
     def neighbors
@@ -130,6 +105,62 @@ module Life
       coordinates.map do |a, b|
         grid.get(a, b)
       end
+    end
+
+    def live_neighbor_count
+      neighbors.count(&:alive?)
+    end
+
+    def succ
+      successors[live_neighbor_count]
+    end
+  end
+
+  class AliveCell < Cell
+    def to_s
+      '*'
+    end
+
+    def alive?
+      true
+    end
+
+    def successors
+      [
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        AliveCell.new(grid, x, y),
+        AliveCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y)
+      ]
+    end
+  end
+
+  class DeadCell < Cell
+    def to_s
+      ' '
+    end
+
+    def alive?
+      false
+    end
+
+    def successors
+      [
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        AliveCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y),
+        DeadCell.new(grid, x, y)
+      ]
     end
   end
 end
